@@ -15,6 +15,12 @@
     public class NugetWindow : EditorWindow
     {
         /// <summary>
+        /// True when the NugetWindow has initialized. This is used to skip time-consuming reloading operations when the assembly is reloaded.
+        /// </summary>
+        [SerializeField]
+        private bool hasRefreshed = false;
+
+        /// <summary>
         /// The current position of the scroll bar in the GUI.
         /// </summary>
         private Vector2 scrollPosition;
@@ -22,6 +28,7 @@
         /// <summary>
         /// The list of NugetPackages available to install.
         /// </summary>
+        [SerializeField]
         private List<NugetPackage> availablePackages = new List<NugetPackage>();
 
         /// <summary>
@@ -92,6 +99,7 @@
         /// <summary>
         /// The number of packages to skip when requesting a list of packages from the server.  This is used to get a new group of packages.
         /// </summary>
+        [SerializeField]
         private int numberToSkip;
 
         /// <summary>
@@ -237,6 +245,11 @@
         /// </summary>
         private void OnEnable()
         {
+            Refresh(false);
+        }
+
+        private void Refresh(bool forceFullRefresh)
+        {
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
 
@@ -248,7 +261,7 @@
                     return;
                 }
 
-                NugetHelper.LogVerbose("NugetWindow reloading config and updating packages");
+                NugetHelper.LogVerbose(hasRefreshed ? "NugetWindow reloading config" : "NugetWindow reloading config and updating packages");
 
                 // reload the NuGet.config file, in case it was changed after Unity opened, but before the manager window opened (now)
                 NugetHelper.LoadNugetConfigFile();
@@ -256,22 +269,29 @@
                 // set the window title
                 titleContent = new GUIContent("NuGet");
 
-                // reset the number to skip
-                numberToSkip = 0;
+                UnityEngine.Debug.LogWarningFormat("availablePackages {0}", availablePackages.Count);
 
-                // TODO: Do we even need to load ALL of the data, or can we just get the Online tab packages?
+                if (!hasRefreshed || forceFullRefresh)
+                {
+                    // reset the number to skip
+                    numberToSkip = 0;
 
-                EditorUtility.DisplayProgressBar("Opening NuGet", "Fetching packages from server...", 0.3f);
-                UpdateOnlinePackages();
+                    // TODO: Do we even need to load ALL of the data, or can we just get the Online tab packages?
 
-                EditorUtility.DisplayProgressBar("Opening NuGet", "Getting installed packages...", 0.6f);
-                UpdateInstalledPackages();
+                    EditorUtility.DisplayProgressBar("Opening NuGet", "Fetching packages from server...", 0.3f);
+                    UpdateOnlinePackages();
 
-                EditorUtility.DisplayProgressBar("Opening NuGet", "Getting available updates...", 0.9f);
-                UpdateUpdatePackages();
+                    EditorUtility.DisplayProgressBar("Opening NuGet", "Getting installed packages...", 0.6f);
+                    UpdateInstalledPackages();
 
-                // load the default icon from the Resources folder
-                defaultIcon = (Texture2D)Resources.Load("defaultIcon", typeof(Texture2D));
+                    EditorUtility.DisplayProgressBar("Opening NuGet", "Getting available updates...", 0.9f);
+                    UpdateUpdatePackages();
+
+                    // load the default icon from the Resources folder
+                    defaultIcon = (Texture2D)Resources.Load("defaultIcon", typeof(Texture2D));
+                }
+
+                hasRefreshed = true;
             }
             catch (Exception e)
             {
@@ -546,7 +566,7 @@
 
                     if (GUILayout.Button("Refresh", GUILayout.Width(60)))
                     {
-                        OnEnable();
+                        Refresh(true);
                     }
                 }
                 EditorGUILayout.EndHorizontal();
@@ -821,7 +841,7 @@
             }
 
             // Show the dependencies
-            if (package.Dependencies.Count > 0)
+            if (package.Dependencies != null && package.Dependencies.Count > 0)
             {
                 EditorStyles.label.wordWrap = true;
                 EditorStyles.label.fontStyle = FontStyle.Italic;

@@ -1224,6 +1224,9 @@
         /// <returns>The image as a Unity Texture2D object.</returns>
         public static Texture2D DownloadImage(string url)
         {
+#if false
+            return null;
+#else
             bool timedout = false;
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
@@ -1236,7 +1239,6 @@
                     //LogVerbose("Downloading image timed out! Took more than 750ms.");
 
                     request.Dispose();
-                    stopwatch.Stop();
                     timedout = true;
                     break;
                 }
@@ -1254,7 +1256,10 @@
                 result = request.texture;
             }
 
+            UnityEngine.Debug.LogWarningFormat("Downloading image {0} took {1} ms", url, stopwatch.ElapsedMilliseconds);
+
             return result;
+#endif
         }
     }
 }
