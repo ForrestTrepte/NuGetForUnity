@@ -34,6 +34,7 @@
         /// <summary>
         /// The list of NugetPackages already installed.
         /// </summary>
+        [SerializeField]
         private List<NugetPackage> installedPackages = new List<NugetPackage>();
 
         /// <summary>
@@ -44,6 +45,7 @@
         /// <summary>
         /// The list of package updates available, based on the already installed packages.
         /// </summary>
+        [SerializeField]
         private List<NugetPackage> updatePackages = new List<NugetPackage>();
 
         /// <summary>
@@ -115,6 +117,7 @@
         /// <summary>
         /// The default icon to display for packages.
         /// </summary>
+        [SerializeField]
         private Texture2D defaultIcon;
 
         /// <summary>
@@ -268,8 +271,6 @@
 
                 // set the window title
                 titleContent = new GUIContent("NuGet");
-
-                UnityEngine.Debug.LogWarningFormat("availablePackages {0}", availablePackages.Count);
 
                 if (!hasRefreshed || forceFullRefresh)
                 {
