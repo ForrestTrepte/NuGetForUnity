@@ -10,6 +10,7 @@
     using Ionic.Zip;
     using UnityEditor;
     using UnityEngine;
+    using UnityEngine.Networking;
     using Debug = UnityEngine.Debug;
 
     /// <summary>
@@ -1153,6 +1154,7 @@
         /// <returns>Stream containing the result.</returns>
         public static Stream RequestUrl(string url, string password, int? timeOut)
         {
+#if false
             HttpWebRequest getRequest = (HttpWebRequest)WebRequest.Create(url);
             if (timeOut.HasValue)
             {
@@ -1169,6 +1171,52 @@
             LogVerbose("HTTP GET {0}", url);
             Stream objStream = getRequest.GetResponse().GetResponseStream();
             return objStream;
+#else
+            using (UnityWebRequest request = UnityWebRequest.Get(url))
+            {
+                if (timeOut.HasValue)
+                {
+                    request.timeout = timeOut.Value / 1000 + 1; // convert milliseconds to seconds
+                }
+
+                if (password != null)
+                {
+                    // Send password as described by https://docs.microsoft.com/en-us/vsts/integrate/get-started/rest/basics.
+                    // This works with Visual Studio Team Services, but hasn't been tested with other authentication schemes so there may be additional work needed if there
+                    // are different kinds of authentication.
+                    request.SetRequestHeader("Authorization", "Basic " + Convert.ToBase64String(System.Text.ASCIIEncoding.ASCII.GetBytes(string.Format("{0}:{1}", "", password))));
+                }
+
+                LogVerbose("HTTP GET {0}", url);
+                request.Send();
+
+                try
+                {
+                    while (!request.isDone)
+                    {
+                        EditorUtility.DisplayProgressBar("Working...", null, 0.0f);
+                    }
+                }
+                finally
+                {
+                    EditorUtility.ClearProgressBar();
+                }
+
+                if (request.isNetworkError || request.isHttpError)
+                {
+                    string message = string.Format(
+                            "{0}{1}{2}",
+                            request.error,
+                            request.responseCode != 0 ? string.Format("\nresponse code {0}", request.responseCode) : string.Empty,
+                            request.downloadHandler != null && request.downloadHandler.text != null ? "\n" + request.downloadHandler.text : string.Empty);
+                    throw new WebException(message);
+                }
+
+                byte[] results = request.downloadHandler.data;
+                Stream stream = new MemoryStream(results);
+                return stream;
+            }
+#endif
         }
 
         /// <summary>
