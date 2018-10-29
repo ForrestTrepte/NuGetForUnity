@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
+using UnityEngine;
 
 namespace NugetForUnity
 {
@@ -50,6 +51,7 @@ namespace NugetForUnity
             var packageEntries = document.Root.Elements(XName.Get("entry", AtomNamespace));
             foreach (var entry in packageEntries)
             {
+                Debug.LogWarning(entry.ToString());
                 NugetPackage package = new NugetPackage();
                 package.Id = entry.GetAtomElement("title").Value;
                 package.DownloadUrl = entry.GetAtomElement("content").Attribute("src").Value;
@@ -61,6 +63,12 @@ namespace NugetForUnity
                 package.ReleaseNotes = entryProperties.GetProperty("ReleaseNotes");
                 package.LicenseUrl = entryProperties.GetProperty("LicenseUrl");
                 package.ProjectUrl = entryProperties.GetProperty("ProjectUrl");
+
+                string tags = entryProperties.GetProperty("Tags");
+                package.Tags = string.IsNullOrEmpty(tags)
+                        ? new string[0]
+                        : tags.Split(' ');
+                Debug.LogWarningFormat("Package {0}, version {1}, {2} tags: {3}", package.Id, package.Version, package.Tags.Length, tags ?? "null");
 
                 string iconUrl = entryProperties.GetProperty("IconUrl");
                 if (!string.IsNullOrEmpty(iconUrl))

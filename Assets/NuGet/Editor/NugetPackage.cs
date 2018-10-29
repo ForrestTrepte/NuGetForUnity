@@ -25,6 +25,11 @@
         public string ReleaseNotes;
 
         /// <summary>
+        /// Gets or sets the list of keywords that describe the package.
+        /// </summary>
+        public string[] Tags;
+
+        /// <summary>
         /// Gets or sets the URL for the location of the license of the NuGet package.
         /// </summary>
         public string LicenseUrl;
