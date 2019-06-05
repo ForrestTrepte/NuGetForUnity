@@ -1304,6 +1304,13 @@
         /// <returns>Stream containing the result.</returns>
         public static Stream RequestUrl(string url, string userName, string password, int? timeOut)
         {
+            IAsyncResult asyncResult = BeginRequestUrl(url, userName, password, timeOut);
+            Stream result = EndRequestUrl(asyncResult);
+            return result;
+        }
+
+        public static IAsyncResult BeginRequestUrl(string url, string userName, string password, int? timeOut)
+        {
             HttpWebRequest getRequest = (HttpWebRequest)WebRequest.Create(url);
             if (timeOut.HasValue)
             {
@@ -1330,9 +1337,23 @@
             }
 
             LogVerbose("HTTP GET {0}", url);
-            Stream objStream = getRequest.GetResponse().GetResponseStream();
-            return objStream;
+            IAsyncResult asyncResult = getRequest.BeginGetResponse(new AsyncCallback(RespCallback), getRequest);
+            return asyncResult;
         }
+
+        private static void RespCallback(IAsyncResult ar)
+        {
+        }
+
+        private static Stream EndRequestUrl(IAsyncResult asyncResult)
+        {
+            asyncResult.AsyncWaitHandle.WaitOne();
+            HttpWebRequest request = (HttpWebRequest)asyncResult.AsyncState;
+            WebResponse response = request.EndGetResponse(asyncResult);
+            Stream stream = response.GetResponseStream();
+            return stream;
+        }
+
 
         /// <summary>
         /// Restores all packages defined in packages.config.
